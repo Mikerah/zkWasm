@@ -5,6 +5,10 @@ use std::rc::Rc;
 use crate::circuits::config::zkwasm_k;
 use crate::runtime::memory_event_of_step;
 use anyhow::Result;
+use ark_std::end_timer;
+use ark_std::start_timer;
+use rayon::prelude::ParallelIterator;
+use rayon::slice::ParallelSlice;
 use specs::host_function::HostFunctionDesc;
 use specs::jtable::StaticFrameEntry;
 use specs::mtable::MTable;
@@ -49,35 +53,52 @@ impl Execution<RuntimeValue>
         externals: &mut E,
         wasm_io: WasmRuntimeIO,
     ) -> Result<ExecutionResult<RuntimeValue>> {
+        let timer = start_timer!(|| "invoke start");
         let instance = self
             .instance
             .run_start_tracer(externals, self.tracer.clone())
             .unwrap();
+        end_timer!(timer);
 
+        let timer = start_timer!(|| "invoke export");
         let result =
             instance.invoke_export_trace(&self.entry, &[], externals, self.tracer.clone())?;
+        end_timer!(timer);
 
+        let timer = start_timer!(|| "prepare table");
         let execution_tables = {
-            let tracer = self.tracer.borrow();
+            let tracer = RefCell::into_inner(Rc::try_unwrap(self.tracer).unwrap());
 
+            let timer = start_timer!(|| "prepare mtable");
             let mtable = {
+                let groups = rayon::current_num_threads();
+                let chunk_size = tracer.etable.entries().len().div_ceil(groups);
+
+                let timer = start_timer!(|| "prepare mtable core");
                 let mentries = tracer
                     .etable
                     .entries()
-                    .iter()
-                    .map(|eentry| memory_event_of_step(eentry, &mut 1))
+                    .par_chunks(chunk_size)
+                    .map(|slot| {
+                        slot.iter()
+                            .flat_map(|eentry| memory_event_of_step(eentry, &mut 1))
+                            .collect()
+                    })
                     .collect::<Vec<Vec<_>>>()
                     .concat();
+                end_timer!(timer);
 
                 MTable::new(mentries, &self.tables.imtable)
             };
+            end_timer!(timer);
 
             ExecutionTable {
-                etable: tracer.etable.clone(),
+                etable: tracer.etable,
                 mtable,
-                jtable: tracer.jtable.clone(),
+                jtable: tracer.jtable,
             }
         };
+        end_timer!(timer);
 
         Ok(ExecutionResult {
             tables: Tables {

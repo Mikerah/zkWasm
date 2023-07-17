@@ -2,6 +2,7 @@
 #![deny(unused_variables)]
 #![deny(unused_imports)]
 #![feature(thread_local)]
+#![feature(int_roundings)]
 
 pub mod circuits;
 pub mod cli;
