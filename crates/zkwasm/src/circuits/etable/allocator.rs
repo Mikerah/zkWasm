@@ -1,5 +1,6 @@
 use super::EVENT_TABLE_ENTRY_ROWS;
 use crate::circuits::bit_table::BitTableConfig;
+use crate::circuits::bit_table::BitTableOp;
 use crate::circuits::cell::*;
 use crate::circuits::etable::ConstraintBuilder;
 use crate::circuits::jtable::JumpTableConfig;
@@ -63,13 +64,35 @@ impl_cell!(AllocatedU8Cell);
 impl_cell!(AllocatedU16Cell);
 impl_cell!(AllocatedUnlimitedCell);
 impl_cell!(AllocatedJumpTableLookupCell);
-impl_cell!(AllocatedBitTableLookupCell);
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct AllocatedJumpTableLookupCell<F: FieldExt>(pub(crate) AllocatedCell<F>);
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct AllocatedBitTableLookupCell<F: FieldExt>(pub(crate) AllocatedCell<F>);
+pub(crate) struct AllocatedBitTableLookupCell<F: FieldExt> {
+    pub(crate) op: AllocatedCell<F>,
+    pub(crate) left: AllocatedCell<F>,
+    pub(crate) right: AllocatedCell<F>,
+    pub(crate) result: AllocatedCell<F>,
+}
+
+impl<F: FieldExt> AllocatedBitTableLookupCell<F> {
+    pub(crate) fn assign(
+        &self,
+        ctx: &mut Context<'_, F>,
+        op: BitTableOp,
+        left: u64,
+        right: u64,
+        result: u64,
+    ) -> Result<(), Error> {
+        self.op.assign(ctx, F::from(op.index() as u64))?;
+        self.left.assign(ctx, F::from(left))?;
+        self.right.assign(ctx, F::from(right))?;
+        self.result.assign(ctx, F::from(result))?;
+
+        Ok(())
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct AllocatedMemoryTableLookupReadCell<F: FieldExt> {
@@ -322,7 +345,15 @@ impl<F: FieldExt> EventTableCellAllocator<F> {
                     bit_table.configure_in_table(
                         meta,
                         "c8f: bit_table_lookup in bit_table",
-                        |meta| curr!(meta, col),
+                        |meta| {
+                            (
+                                fixed_curr!(meta, sel),
+                                fixed_curr!(meta, sel) * curr!(meta, col),
+                                fixed_curr!(meta, sel) * nextn!(meta, col, 1),
+                                fixed_curr!(meta, sel) * nextn!(meta, col, 2),
+                                fixed_curr!(meta, sel) * nextn!(meta, col, 3),
+                            )
+                        },
                     );
                     vec![col]
                 })
@@ -414,7 +445,12 @@ impl<F: FieldExt> EventTableCellAllocator<F> {
     }
 
     pub(crate) fn alloc_bit_table_lookup_cell(&mut self) -> AllocatedBitTableLookupCell<F> {
-        AllocatedBitTableLookupCell(self.alloc(&EventTableCellType::BitTableLookup))
+        AllocatedBitTableLookupCell {
+            op: self.alloc(&EventTableCellType::BitTableLookup),
+            left: self.alloc(&EventTableCellType::BitTableLookup),
+            right: self.alloc(&EventTableCellType::BitTableLookup),
+            result: self.alloc(&EventTableCellType::BitTableLookup),
+        }
     }
 
     pub(crate) fn alloc_memory_table_lookup_read_cell(

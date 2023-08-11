@@ -1,4 +1,4 @@
-use crate::circuits::bit_table::encode_bit_table_binary;
+use crate::circuits::bit_table::BitTableOp;
 use crate::circuits::cell::*;
 use crate::circuits::etable::allocator::*;
 use crate::circuits::etable::ConstraintBuilder;
@@ -88,16 +88,13 @@ impl<F: FieldExt> EventTableOpcodeConfigBuilder<F> for BinBitConfigBuilder {
         let res = memory_table_lookup_stack_write.value_cell;
 
         constraint_builder.push(
-            "op_bin_bit: bit table lookup",
+            "op_bin_bit: lookup",
             Box::new(move |meta| {
                 vec![
-                    bit_table_lookup.0.expr(meta)
-                        - encode_bit_table_binary(
-                            op_class.expr(meta),
-                            lhs.expr(meta),
-                            rhs.expr(meta),
-                            res.expr(meta),
-                        ),
+                    bit_table_lookup.op.expr(meta) - op_class.expr(meta),
+                    bit_table_lookup.left.expr(meta) - lhs.expr(meta),
+                    bit_table_lookup.right.expr(meta) - rhs.expr(meta),
+                    bit_table_lookup.result.expr(meta) - res.expr(meta),
                 ]
             }),
         );
@@ -159,15 +156,8 @@ impl<F: FieldExt> EventTableOpcodeConfig<F> for BinBitConfig<F> {
 
         self.is_i32.assign_bool(ctx, vtype == VarType::I32)?;
 
-        self.bit_table_lookup.0.assign_bn(
-            ctx,
-            &encode_bit_table_binary(
-                BigUint::from(class as u64),
-                left.into(),
-                right.into(),
-                value.into(),
-            ),
-        )?;
+        self.bit_table_lookup
+            .assign(ctx, BitTableOp::BinaryBit(class), left, right, value)?;
 
         match class {
             specs::itable::BitOp::And => {
