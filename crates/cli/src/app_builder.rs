@@ -147,7 +147,7 @@ pub trait AppBuilder: CommandBuilder {
                         public_inputs,
                         private_inputs,
                         context_in,
-                        Rc::new(RefCell::new(vec![])),
+                        context_output.clone(),
                     )?;
 
                     write_context_output(&context_output.borrow(), context_out_path)?;
