@@ -19,7 +19,7 @@ use specs::mtable::LocationType;
 mod allocator;
 mod assign;
 
-pub(crate) const MEMORY_TABLE_ENTRY_ROWS: i32 = 4;
+pub(crate) const MEMORY_TABLE_ENTRY_ROWS: i32 = 2;
 
 #[derive(Clone)]
 pub struct MemoryTableConfig<F: FieldExt> {

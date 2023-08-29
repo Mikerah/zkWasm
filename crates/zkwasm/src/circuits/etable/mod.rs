@@ -69,7 +69,7 @@ mod op_configure;
 pub(crate) mod allocator;
 pub(crate) mod constraint_builder;
 
-pub(crate) const EVENT_TABLE_ENTRY_ROWS: i32 = 4;
+pub(crate) const EVENT_TABLE_ENTRY_ROWS: i32 = 2;
 pub(crate) const OP_CAPABILITY: usize = 32;
 
 const FOREIGN_LOOKUP_CAPABILITY: usize = 6;
@@ -303,7 +303,7 @@ impl<F: FieldExt> EventTableConfig<F> {
         #[cfg(feature = "checksum")]
         const OPTIMIZE_GATES: bool = false;
         #[cfg(not(feature = "checksum"))]
-        const OPTIMIZE_GATES: bool = true;
+        const OPTIMIZE_GATES: bool = false;
 
         macro_rules! configure {
             ($op:expr, $x:ident) => {

@@ -182,15 +182,15 @@ pub(crate) enum EventTableCellType {
     BitTableLookup,
 }
 
-const BIT_COLUMNS: usize = 12;
-const U8_COLUMNS: usize = 1;
+const BIT_COLUMNS: usize = 23;
+const U8_COLUMNS: usize = 2;
 const U64_CELLS: usize = 5;
-const U16_COLUMNS: usize = U64_CELLS;
-const COMMON_RANGE_COLUMNS: usize = 7;
-const UNLIMITED_COLUMNS: usize = 6;
-const MEMORY_TABLE_LOOKUP_COLUMNS: usize = 2;
+const U16_COLUMNS: usize = U64_CELLS * 2;
+const COMMON_RANGE_COLUMNS: usize = 13;
+const UNLIMITED_COLUMNS: usize = 12;
+const MEMORY_TABLE_LOOKUP_COLUMNS: usize = 3;
 const JUMP_TABLE_LOOKUP_COLUMNS: usize = 1;
-const BIT_TABLE_LOOKUP_COLUMNS: usize = 1;
+const BIT_TABLE_LOOKUP_COLUMNS: usize = 2;
 
 #[derive(Debug, Clone)]
 pub(crate) struct EventTableCellAllocator<F: FieldExt> {
@@ -263,7 +263,7 @@ impl<F: FieldExt> EventTableCellAllocator<F> {
         bit_table: &BitTableConfig<F>,
         cols: &mut impl Iterator<Item = Column<Advice>>,
     ) -> Self {
-        let mut all_cols = BTreeMap::new();
+        let mut all_cols: BTreeMap<EventTableCellType, Vec<Vec<Column<Advice>>>> = BTreeMap::new();
         all_cols.insert(
             EventTableCellType::Bit,
             [0; BIT_COLUMNS]
@@ -342,24 +342,27 @@ impl<F: FieldExt> EventTableCellAllocator<F> {
             [0; BIT_TABLE_LOOKUP_COLUMNS]
                 .map(|_| {
                     let col = cols.next().unwrap();
-                    bit_table.configure_in_table(
-                        meta,
-                        "c8f: bit_table_lookup in bit_table",
-                        |meta| {
-                            (
-                                fixed_curr!(meta, sel),
-                                fixed_curr!(meta, sel) * curr!(meta, col),
-                                fixed_curr!(meta, sel) * nextn!(meta, col, 1),
-                                fixed_curr!(meta, sel) * nextn!(meta, col, 2),
-                                fixed_curr!(meta, sel) * nextn!(meta, col, 3),
-                            )
-                        },
-                    );
+
                     vec![col]
                 })
                 .into_iter()
                 .collect(),
         );
+
+        {
+            let col = all_cols.get(&EventTableCellType::BitTableLookup).unwrap()[0][0];
+            let col2 = all_cols.get(&EventTableCellType::BitTableLookup).unwrap()[1][0];
+
+            bit_table.configure_in_table(meta, "c8f: bit_table_lookup in bit_table", |meta| {
+                (
+                    fixed_curr!(meta, sel),
+                    fixed_curr!(meta, sel) * curr!(meta, col),
+                    fixed_curr!(meta, sel) * nextn!(meta, col, 1),
+                    fixed_curr!(meta, sel) * curr!(meta, col2),
+                    fixed_curr!(meta, sel) * nextn!(meta, col2, 1),
+                )
+            });
+        }
 
         Self {
             all_cols,
