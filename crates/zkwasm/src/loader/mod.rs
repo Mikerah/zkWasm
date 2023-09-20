@@ -247,7 +247,7 @@ impl<E: MultiMillerLoop> ZkWasmLoader<E> {
         Ok(load_or_create_proof::<E, _>(
             &params,
             vkey,
-            circuit,
+            &[circuit],
             &[&instances],
             None,
             TranscriptHash::Poseidon,

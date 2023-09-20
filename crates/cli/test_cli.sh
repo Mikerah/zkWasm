@@ -1,4 +1,13 @@
 #!/bin/bash
+RUST_LOG=info cargo run --release -- -k 18 --function zkmain --output ./output --wasm image.wasm single-prove --public 44:i64 --public 32:i64
+RUST_LOG=info cargo run --release -- -k 18 --function zkmain --output ./output --wasm image.wasm single-verify --proof output/zkwasm.0.transcript.data --instance output/zkwasm.0.instance.data
+
+RUST_LOG=info cargo run --release -- -k 18 --function zkmain --output ./output --wasm ./image.wasm aggregate-prove --public 44:i64 --public 32:i64
+exit 0
+
+RUST_LOG=info cargo run --release -- -k 18 --function zkmain --output ./output --wasm image.wasm single-prove --public 44:i64 --public 32:i64
+RUST_LOG=info cargo run --release -- -k 18 --function zkmain --output ./output --wasm image.wasm single-verify --proof output/zkwasm.0.transcript.data --instance output/zkwasm.0.instance.data
+exit 0
 
 set -e
 set -x

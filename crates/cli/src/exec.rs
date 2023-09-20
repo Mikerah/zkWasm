@@ -386,6 +386,8 @@ pub fn exec_aggregate_create_proof(
     )
     .unwrap();
 
+    info!("handle aggregate circuit");
+
     run_circuit_unsafe_full_pass::<Bn256, _>(
         &output_dir.as_path(),
         AGGREGATE_PREFIX,
