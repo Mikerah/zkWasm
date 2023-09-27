@@ -144,13 +144,6 @@ pub trait ArgBuilder {
             .map_or(PathBuf::from("sol"), |x| x.clone())
     }
 
-    fn auxonly_arg<'a>() -> Arg<'a> {
-        arg!(
-            -a --auxonly "Generate aux file only."
-        )
-        .takes_value(false)
-    }
-
     fn single_public_arg<'a>() -> Arg<'a>;
     fn parse_single_public_arg(matches: &ArgMatches) -> Vec<u64>;
 
@@ -215,11 +208,6 @@ pub trait ArgBuilder {
             .get_one::<PathBuf>("instances")
             .expect("instances is required.")
             .clone()
-    }
-    fn parse_auxonly(matches: &ArgMatches) -> bool {
-        matches
-            .get_many::<String>("auxonly")
-            .map_or(false, |_| true)
     }
 
     fn dry_run_service_arg<'a>() -> Arg<'a> {

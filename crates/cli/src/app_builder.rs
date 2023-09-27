@@ -213,6 +213,7 @@ pub trait AppBuilder: CommandBuilder {
                     zkwasm_k,
                     Self::AGGREGATE_K,
                     Self::NAME,
+                    Self::N_PROOFS,
                     wasm_binary,
                     phantom_functions,
                     &output_dir,
@@ -237,9 +238,6 @@ pub trait AppBuilder: CommandBuilder {
             }
 
             Some(("solidity-aggregate-verifier", sub_matches)) => {
-                let proof_path: PathBuf = Self::parse_proof_path_arg(&sub_matches);
-                let instances_path: PathBuf = Self::parse_aggregate_instance(&sub_matches);
-                let aux_only: bool = Self::parse_auxonly(&sub_matches);
                 let sol_path: PathBuf = Self::parse_sol_dir_arg(&sub_matches);
 
                 exec_solidity_aggregate_proof(
@@ -247,11 +245,8 @@ pub trait AppBuilder: CommandBuilder {
                     Self::AGGREGATE_K,
                     Self::MAX_PUBLIC_INPUT_SIZE,
                     &output_dir,
-                    &proof_path,
                     &sol_path,
-                    &instances_path,
                     Self::N_PROOFS,
-                    aux_only,
                 )
             }
 

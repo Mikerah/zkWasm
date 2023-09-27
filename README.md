@@ -69,7 +69,7 @@ cargo run --release -- --function <FUNCTION_NAME> --wasm <WASM_BINARY> aggregate
 
 ## Generate verify contract:
 ```
-cargo run --release --function <FUNCTION_NAME> --wasm <WASM_BINARY> solidity-aggregate-verifier --proof <PROOF_PATH> --instances <AGGREGATE_INSTANCE_PATH>
+cargo run --release --function <FUNCTION_NAME> --wasm <WASM_BINARY> solidity-aggregate-verifier
 ```
 
 # Operations Spec [WIP]
