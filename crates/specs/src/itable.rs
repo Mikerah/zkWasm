@@ -87,7 +87,7 @@ impl OpcodeClass {
         }
     }
 
-    pub fn jops(&self) -> u64 {
+    pub fn jops(&self) -> u32 {
         match self {
             OpcodeClass::Return => 1,
             OpcodeClass::Call => 1,
@@ -300,7 +300,7 @@ impl Opcode {
         opcode_class.mops()
     }
 
-    pub fn jops(&self) -> u64 {
+    pub fn jops(&self) -> u32 {
         let opcode_class: OpcodeClass = self.clone().into();
         opcode_class.jops()
     }
