@@ -12,6 +12,7 @@ use halo2_proofs::plonk::Error;
 use halo2_proofs::plonk::Fixed;
 use log::debug;
 use specs::ExecutionTable;
+use specs::ImageTable;
 use specs::Tables;
 
 use crate::circuits::bit_table::BitTableChip;
@@ -20,7 +21,7 @@ use crate::circuits::etable::EventTableChip;
 use crate::circuits::etable::EventTableConfig;
 use crate::circuits::external_host_call_table::ExternalHostCallChip;
 use crate::circuits::external_host_call_table::ExternalHostCallTableConfig;
-use crate::circuits::image_table::EncodeCompilationTableValues;
+use crate::circuits::image_table::EncodeImageTableValues;
 use crate::circuits::image_table::ImageTableChip;
 use crate::circuits::image_table::ImageTableLayouter;
 use crate::circuits::jtable::JumpTableChip;
@@ -75,8 +76,9 @@ impl<F: FieldExt> Circuit<F> for TestCircuit<F> {
 
     fn without_witnesses(&self) -> Self {
         TestCircuit::new(Tables {
-            compilation_tables: self.tables.compilation_tables.clone(),
-            execution_tables: ExecutionTable::default(),
+            pre_image_table: ImageTable::default(),
+            execution_table: ExecutionTable::default(),
+            post_image_table: ImageTable::default(),
         })
     }
 
@@ -194,7 +196,7 @@ impl<F: FieldExt> Circuit<F> for TestCircuit<F> {
                 &mut layouter,
                 &self
                     .tables
-                    .execution_tables
+                    .execution_table
                     .etable
                     .filter_external_host_call_table(),
             )?
@@ -211,7 +213,7 @@ impl<F: FieldExt> Circuit<F> for TestCircuit<F> {
                 let etable = exec_with_profile!(
                     || "Prepare memory info for etable",
                     EventTableWithMemoryInfo::new(
-                        &self.tables.execution_tables.etable,
+                        &self.tables.execution_table.etable,
                         &memory_writing_table,
                     )
                 );
@@ -221,7 +223,7 @@ impl<F: FieldExt> Circuit<F> for TestCircuit<F> {
                     echip.assign(
                         &mut ctx,
                         &etable,
-                        &self.tables.compilation_tables.initialization_state
+                        &self.tables.pre_image_table.initialization_state
                     )?
                 );
 
@@ -245,8 +247,8 @@ impl<F: FieldExt> Circuit<F> for TestCircuit<F> {
                         || "Assign frame table",
                         jchip.assign(
                             &mut ctx,
-                            &self.tables.execution_tables.jtable,
-                            &self.tables.compilation_tables.static_jtable,
+                            &self.tables.execution_table.jtable,
+                            &self.tables.pre_image_table.static_jtable,
                         )?
                     )
                 };
@@ -264,8 +266,8 @@ impl<F: FieldExt> Circuit<F> for TestCircuit<F> {
             || "Assign context cont chip",
             context_chip.assign(
                 &mut layouter,
-                &self.tables.execution_tables.etable.get_context_inputs(),
-                &self.tables.execution_tables.etable.get_context_outputs()
+                &self.tables.execution_table.etable.get_context_inputs(),
+                &self.tables.execution_table.etable.get_context_outputs()
             )?
         );
 
@@ -273,9 +275,7 @@ impl<F: FieldExt> Circuit<F> for TestCircuit<F> {
             || "Assign Image Table",
             image_chip.assign(
                 &mut layouter,
-                self.tables
-                    .compilation_tables
-                    .encode_compilation_table_values(),
+                self.tables.pre_image_table.encode_image_table_values(),
                 ImageTableLayouter {
                     initialization_state,
                     static_frame_entries,

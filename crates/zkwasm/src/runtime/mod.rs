@@ -8,7 +8,7 @@ use specs::mtable::LocationType;
 use specs::mtable::MemoryTableEntry;
 use specs::mtable::VarType;
 use specs::step::StepInfo;
-use specs::CompilationTable;
+use specs::ImageTable;
 use specs::Tables;
 
 use self::wasmi_interpreter::WasmiRuntime;
@@ -18,7 +18,7 @@ pub mod wasmi_interpreter;
 
 pub struct CompiledImage<I, T> {
     pub entry: String,
-    pub tables: CompilationTable,
+    pub tables: ImageTable,
     pub instance: I,
     pub tracer: Rc<RefCell<T>>,
 }

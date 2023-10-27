@@ -12,10 +12,8 @@ pub trait Profiler {
 
 impl Profiler for Tables {
     fn profile_tables(&self) {
-        self.execution_tables.etable.profile_instruction();
+        self.execution_table.etable.profile_instruction();
 
-        self.execution_tables
-            .etable
-            .estimate_mergeable_instruction();
+        self.execution_table.etable.estimate_mergeable_instruction();
     }
 }

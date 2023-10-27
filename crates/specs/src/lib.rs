@@ -115,12 +115,19 @@ impl Default for InitializationState<u32> {
 }
 
 #[derive(Default, Serialize, Debug, Clone)]
-pub struct CompilationTable {
+pub struct ImageTable {
     pub itable: InstructionTable,
     pub imtable: InitMemoryTable,
     pub elem_table: ElemTable,
     pub static_jtable: Vec<StaticFrameEntry>,
     pub initialization_state: InitializationState<u32>,
+}
+
+impl ImageTable {
+    pub fn update_image_table(&self, execution_table: &ExecutionTable) -> ImageTable {
+        // todo!()
+        self.clone()
+    }
 }
 
 #[derive(Default, Serialize, Clone)]
@@ -131,8 +138,9 @@ pub struct ExecutionTable {
 
 #[derive(Default, Clone)]
 pub struct Tables {
-    pub compilation_tables: CompilationTable,
-    pub execution_tables: ExecutionTable,
+    pub pre_image_table: ImageTable,
+    pub post_image_table: ImageTable,
+    pub execution_table: ExecutionTable,
 }
 
 impl Tables {
@@ -141,7 +149,7 @@ impl Tables {
         memory_event_of_step: fn(&EventTableEntry, &mut u32) -> Vec<MemoryTableEntry>,
     ) -> MTable {
         let mut memory_entries = self
-            .execution_tables
+            .execution_table
             .etable
             .entries()
             .par_iter()
@@ -154,7 +162,7 @@ impl Tables {
             .map(|entry| {
                 if entry.ltype == LocationType::Heap || entry.ltype == LocationType::Global {
                     let (_, _, value) = self
-                        .compilation_tables
+                        .pre_image_table
                         .imtable
                         .try_find(entry.ltype, entry.offset)
                         .unwrap();
@@ -204,17 +212,17 @@ impl Tables {
             fd.write(buf.as_bytes()).unwrap();
         }
 
-        let itable = serde_json::to_string_pretty(&self.compilation_tables.itable).unwrap();
-        let imtable = serde_json::to_string_pretty(&self.compilation_tables.imtable).unwrap();
-        let etable = serde_json::to_string_pretty(&self.execution_tables.etable).unwrap();
+        let itable = serde_json::to_string_pretty(&self.pre_image_table.itable).unwrap();
+        let imtable = serde_json::to_string_pretty(&self.pre_image_table.imtable).unwrap();
+        let etable = serde_json::to_string_pretty(&self.execution_table.etable).unwrap();
         let external_host_call_table = serde_json::to_string_pretty(
             &self
-                .execution_tables
+                .execution_table
                 .etable
                 .filter_external_host_call_table(),
         )
         .unwrap();
-        let jtable = serde_json::to_string_pretty(&self.execution_tables.jtable).unwrap();
+        let jtable = serde_json::to_string_pretty(&self.execution_table.jtable).unwrap();
 
         let dir = dir.unwrap_or(env::current_dir().unwrap());
         write_file(&dir, "itable.json", &itable);

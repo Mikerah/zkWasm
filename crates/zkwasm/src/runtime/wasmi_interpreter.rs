@@ -5,8 +5,8 @@ use std::rc::Rc;
 use anyhow::Result;
 use specs::host_function::HostFunctionDesc;
 use specs::jtable::StaticFrameEntry;
-use specs::CompilationTable;
 use specs::ExecutionTable;
+use specs::ImageTable;
 use specs::InitializationState;
 use specs::Tables;
 use wasmi::Externals;
@@ -68,7 +68,7 @@ impl Execution<RuntimeValue>
         let result =
             instance.invoke_export_trace(&self.entry, &[], externals, self.tracer.clone())?;
 
-        let execution_tables = {
+        let execution_table = {
             let tracer = self.tracer.borrow();
 
             let first_eentry = tracer.etable.entries().first().clone().unwrap();
@@ -80,10 +80,14 @@ impl Execution<RuntimeValue>
             }
         };
 
+        let pre_image_table = self.tables.clone();
+        let post_image_table = pre_image_table.update_image_table(&execution_table);
+
         Ok(ExecutionResult {
             tables: Tables {
-                compilation_tables: self.tables.clone(),
-                execution_tables,
+                pre_image_table,
+                post_image_table,
+                execution_table,
             },
             result,
             public_inputs_and_outputs: wasm_io.public_inputs_and_outputs.borrow().clone(),
@@ -172,7 +176,7 @@ impl WasmiRuntime {
 
         Ok(CompiledImage {
             entry: entry.to_owned(),
-            tables: CompilationTable {
+            tables: ImageTable {
                 itable,
                 imtable,
                 elem_table,

@@ -16,14 +16,15 @@ use halo2aggregator_s::circuits::utils::load_or_create_proof;
 use halo2aggregator_s::circuits::utils::TranscriptHash;
 use halo2aggregator_s::transcript::poseidon::PoseidonRead;
 use specs::ExecutionTable;
+use specs::ImageTable;
 use specs::Tables;
 use wasmi::tracer::Tracer;
 use wasmi::ImportsBuilder;
 use wasmi::NotStartedModuleRef;
 use wasmi::RuntimeValue;
 
-use crate::checksum::CompilationTableWithParams;
 use crate::checksum::ImageCheckSum;
+use crate::checksum::ImageTableWithParams;
 use crate::circuits::config::init_zkwasm_runtime;
 use crate::circuits::config::set_zkwasm_k;
 use crate::circuits::image_table::IMAGE_COL_NAME;
@@ -109,21 +110,12 @@ impl<E: MultiMillerLoop> ZkWasmLoader<E> {
     }
 
     fn circuit_without_witness(&self) -> Result<TestCircuit<E::Scalar>> {
-        let (env, wasm_runtime_io) = HostEnv::new_with_full_foreign_plugins(
-            vec![],
-            vec![],
-            vec![],
-            Arc::new(Mutex::new(vec![])),
-        );
-
-        let compiled_module = self.compile(&env)?;
-
         let builder = ZkWasmCircuitBuilder {
             tables: Tables {
-                compilation_tables: compiled_module.tables,
-                execution_tables: ExecutionTable::default(),
+                pre_image_table: ImageTable::default(),
+                post_image_table: ImageTable::default(),
+                execution_table: ExecutionTable::default(),
             },
-            public_inputs_and_outputs: wasm_runtime_io.public_inputs_and_outputs.borrow().clone(),
         };
 
         Ok(builder.build_circuit::<E::Scalar>())
@@ -162,7 +154,7 @@ impl<E: MultiMillerLoop> ZkWasmLoader<E> {
         );
         let compiled = self.compile(&env)?;
 
-        let table_with_params = CompilationTableWithParams {
+        let table_with_params = ImageTableWithParams {
             table: &compiled.tables,
             params,
         };
@@ -218,7 +210,6 @@ impl<E: MultiMillerLoop> ZkWasmLoader<E> {
 
         let builder = ZkWasmCircuitBuilder {
             tables: execution_result.tables,
-            public_inputs_and_outputs: execution_result.public_inputs_and_outputs,
         };
 
         println!("output:");

@@ -9,7 +9,7 @@ use specs::imtable::InitMemoryTable;
 use specs::itable::InstructionTable;
 use specs::jtable::StaticFrameEntry;
 use specs::mtable::LocationType;
-use specs::CompilationTable;
+use specs::ImageTable;
 use specs::InitializationState;
 use std::marker::PhantomData;
 
@@ -55,12 +55,12 @@ impl<T: Clone> ImageTableLayouter<T> {
     }
 }
 
-pub trait EncodeCompilationTableValues<F: Clone> {
-    fn encode_compilation_table_values(&self) -> ImageTableLayouter<F>;
+pub trait EncodeImageTableValues<F: Clone> {
+    fn encode_image_table_values(&self) -> ImageTableLayouter<F>;
 }
 
-impl<F: FieldExt> EncodeCompilationTableValues<F> for CompilationTable {
-    fn encode_compilation_table_values(&self) -> ImageTableLayouter<F> {
+impl<F: FieldExt> EncodeImageTableValues<F> for ImageTable {
+    fn encode_image_table_values(&self) -> ImageTableLayouter<F> {
         fn msg_of_initialization_state<F: FieldExt>(
             initialization_state: &InitializationState<u32>,
         ) -> InitializationState<F> {
