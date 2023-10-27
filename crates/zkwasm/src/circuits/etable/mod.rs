@@ -78,7 +78,7 @@ pub struct EventTableCommonConfig<F: FieldExt> {
     ops: [AllocatedBitCell<F>; OP_CAPABILITY],
 
     rest_mops_cell: AllocatedCommonRangeCell<F>,
-    rest_jops_cell: AllocatedCommonRangeCell<F>,
+    jops_cell: AllocatedCommonRangeCell<F>,
     pub(crate) input_index_cell: AllocatedCommonRangeCell<F>,
     pub(crate) context_input_index_cell: AllocatedCommonRangeCell<F>,
     pub(crate) context_output_index_cell: AllocatedCommonRangeCell<F>,
@@ -230,7 +230,7 @@ impl<F: FieldExt> EventTableConfig<F> {
         let enabled_cell = allocator.alloc_bit_cell();
 
         let rest_mops_cell = allocator.alloc_common_range_cell();
-        let rest_jops_cell = allocator.alloc_common_range_cell();
+        let jops_cell = allocator.alloc_common_range_cell();
         let input_index_cell = allocator.alloc_common_range_cell();
         let context_input_index_cell = allocator.alloc_common_range_cell();
         let context_output_index_cell = allocator.alloc_common_range_cell();
@@ -272,7 +272,7 @@ impl<F: FieldExt> EventTableConfig<F> {
             enabled_cell,
             ops,
             rest_mops_cell,
-            rest_jops_cell,
+            jops_cell,
             input_index_cell,
             context_input_index_cell,
             context_output_index_cell,
@@ -444,14 +444,14 @@ impl<F: FieldExt> EventTableConfig<F> {
             )]
         });
 
-        meta.create_gate("c5b. rest_jops change", |meta| {
-            vec![sum_ops_expr_with_init(
-                rest_jops_cell.next_expr(meta) - rest_jops_cell.curr_expr(meta),
-                meta,
-                &|meta, config: &Rc<Box<dyn EventTableOpcodeConfig<F>>>| config.jops_expr(meta),
-                None,
-            )]
-        });
+        // meta.create_gate("c5b. rest_jops change", |meta| {
+        //     vec![sum_ops_expr_with_init(
+        //         jops_cell.curr_expr(meta) - jops_cell.next_expr(meta),
+        //         meta,
+        //         &|meta, config: &Rc<Box<dyn EventTableOpcodeConfig<F>>>| config.jops_expr(meta),
+        //         None,
+        //     )]
+        // });
 
         meta.create_gate("c5c. input_index change", |meta| {
             vec![sum_ops_expr_with_init(

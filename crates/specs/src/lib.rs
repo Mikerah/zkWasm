@@ -8,7 +8,6 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use brtable::ElemTable;
-use configure_table::ConfigureTable;
 use etable::EventTable;
 use etable::EventTableEntry;
 use imtable::InitMemoryTable;
@@ -47,12 +46,51 @@ pub struct InitializationState<T> {
     pub frame_id: T,
     pub sp: T,
     pub initial_memory_pages: T,
+    pub maximal_memory_pages: T,
+
+    pub input_index: T,
+    pub context_input_index: T,
+    pub context_output_index: T,
+    pub external_host_call_index: T,
 
     // TODO: open mtable
-    // pub rest_mops: Option<T>,
-    pub rest_jops: T,
+    // pub mops: Option<T>,
+    pub jops: T,
+}
 
-    pub is_very_first_step: bool,
+impl<T> InitializationState<T> {
+    pub fn map<U>(&self, f: impl Fn(&T) -> U) -> InitializationState<U> {
+        InitializationState {
+            eid: f(&self.eid),
+            fid: f(&self.fid),
+            iid: f(&self.iid),
+            frame_id: f(&self.frame_id),
+            sp: f(&self.sp),
+            initial_memory_pages: f(&self.initial_memory_pages),
+            maximal_memory_pages: f(&self.maximal_memory_pages),
+            input_index: f(&self.input_index),
+            context_input_index: f(&self.context_input_index),
+            context_output_index: f(&self.context_output_index),
+            external_host_call_index: f(&self.external_host_call_index),
+            jops: f(&self.jops),
+        }
+    }
+    pub fn plain(self) -> Vec<T> {
+        vec![
+            self.eid,
+            self.fid,
+            self.iid,
+            self.frame_id,
+            self.sp,
+            self.initial_memory_pages,
+            self.maximal_memory_pages,
+            self.input_index,
+            self.context_input_index,
+            self.context_output_index,
+            self.external_host_call_index,
+            self.jops,
+        ]
+    }
 }
 
 impl Default for InitializationState<u32> {
@@ -64,8 +102,14 @@ impl Default for InitializationState<u32> {
             frame_id: Default::default(),
             sp: Default::default(),
             initial_memory_pages: Default::default(),
-            rest_jops: Default::default(),
-            is_very_first_step: Default::default(),
+            maximal_memory_pages: Default::default(),
+
+            input_index: Default::default(),
+            context_input_index: Default::default(),
+            context_output_index: Default::default(),
+            external_host_call_index: Default::default(),
+
+            jops: Default::default(),
         }
     }
 }
@@ -75,14 +119,12 @@ pub struct CompilationTable {
     pub itable: InstructionTable,
     pub imtable: InitMemoryTable,
     pub elem_table: ElemTable,
-    pub configure_table: ConfigureTable,
     pub static_jtable: Vec<StaticFrameEntry>,
-    pub fid_of_entry: u32,
+    pub initialization_state: InitializationState<u32>,
 }
 
 #[derive(Default, Serialize, Clone)]
 pub struct ExecutionTable {
-    pub initialization_state: InitializationState<u32>,
     pub etable: EventTable,
     pub jtable: JumpTable,
 }

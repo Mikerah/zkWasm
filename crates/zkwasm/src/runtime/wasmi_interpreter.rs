@@ -71,18 +71,10 @@ impl Execution<RuntimeValue>
         let execution_tables = {
             let tracer = self.tracer.borrow();
 
+            let first_eentry = tracer.etable.entries().first().clone().unwrap();
+            let last_eentry = tracer.etable.entries().last().clone().unwrap();
+
             ExecutionTable {
-                initialization_state: InitializationState {
-                    eid: 1,
-                    fid: self.tables.fid_of_entry,
-                    iid: 0,
-                    frame_id: 0,
-                    sp: DEFAULT_VALUE_STACK_LIMIT as u32 - 1,
-                    initial_memory_pages: self.tables.configure_table.init_memory_pages,
-                    rest_jops: tracer.jtable.entries().len() as u32 * 2
-                        + self.tables.static_jtable.len() as u32,
-                    is_very_first_step: true,
-                },
                 etable: tracer.etable.clone(),
                 jtable: tracer.jtable.clone(),
             }
@@ -163,6 +155,20 @@ impl WasmiRuntime {
         let elem_table = tracer.borrow().elem_table.clone();
         let configure_table = tracer.borrow().configure_table.clone();
         let static_jtable = tracer.borrow().static_jtable_entries.clone();
+        let initialization_state = InitializationState {
+            eid: 1,
+            fid: fid_of_entry,
+            iid: 0,
+            frame_id: 0,
+            sp: DEFAULT_VALUE_STACK_LIMIT as u32 - 1,
+            initial_memory_pages: configure_table.init_memory_pages,
+            maximal_memory_pages: configure_table.maximal_memory_pages,
+            input_index: 1,
+            context_input_index: 1,
+            context_output_index: 1,
+            external_host_call_index: 1,
+            jops: 0,
+        };
 
         Ok(CompiledImage {
             entry: entry.to_owned(),
@@ -170,9 +176,8 @@ impl WasmiRuntime {
                 itable,
                 imtable,
                 elem_table,
-                configure_table,
                 static_jtable,
-                fid_of_entry,
+                initialization_state,
             },
             instance,
             tracer,

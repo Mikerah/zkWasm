@@ -10,31 +10,6 @@ use crate::circuits::utils::bn_to_field;
 use crate::circuits::utils::Context;
 
 impl<F: FieldExt> JumpTableChip<F> {
-    /// Frame Table Constraint 1. The etable and jtable must have the same jops count."
-    fn constraint_to_etable_jops(
-        &self,
-        ctx: &mut Context<'_, F>,
-        etable_rest_jops_cell: Cell,
-    ) -> Result<(), Error> {
-        /*
-         * Assign a meaningless rest_jops value to get the cell which should equal to the
-         * rest_jops cell in etable.
-         *
-         * The value will be overwritten in assign_static_entries/assign_jtable_entries.
-         */
-        let cell = ctx.region.assign_advice(
-            || "jtable rest",
-            self.config.data,
-            JtableOffset::JtableOffsetRest as usize,
-            || Ok(F::from(0)),
-        )?;
-
-        ctx.region
-            .constrain_equal(cell.cell(), etable_rest_jops_cell)?;
-
-        Ok(())
-    }
-
     fn init(&self, ctx: &mut Context<'_, F>) -> Result<(), Error> {
         let capability = self.max_available_rows / JtableOffset::JtableOffsetMax as usize;
 
@@ -203,11 +178,8 @@ impl<F: FieldExt> JumpTableChip<F> {
         &self,
         ctx: &mut Context<'_, F>,
         jtable: &JumpTable,
-        etable_rest_jops_cell: Cell,
         static_entries: &Vec<StaticFrameEntry>,
     ) -> Result<Vec<(Cell, Cell)>, Error> {
-        self.constraint_to_etable_jops(ctx, etable_rest_jops_cell)?;
-
         self.init(ctx)?;
         ctx.reset();
 
