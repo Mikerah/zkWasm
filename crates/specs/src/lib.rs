@@ -125,8 +125,7 @@ pub struct ImageTable {
 
 impl ImageTable {
     pub fn update_image_table(&self, execution_table: &ExecutionTable) -> ImageTable {
-        // todo!()
-        self.clone()
+        todo!()
     }
 }
 
